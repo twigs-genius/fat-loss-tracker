@@ -201,6 +201,8 @@
           </div>
           <div class="export-actions">
             <button class="primary-button" id="exportJsonButton" type="button">导出完整备份</button>
+            <label class="ghost-button import-button" for="importJsonInput">导入备份</label>
+            <input id="importJsonInput" class="file-input" type="file" accept="application/json,.json" />
             <button class="ghost-button" id="exportCsvButton" type="button">导出 CSV 表格</button>
           </div>
         </article>
@@ -218,6 +220,6 @@
       </section>
     </main>
 
-    <script src="./app.js?v=20260512-export"></script>
+    <script src="./app.js?v=20260512-import-export"></script>
   </body>
 </html>

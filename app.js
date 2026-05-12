@@ -154,6 +154,7 @@ const el = {
   archiveList: document.querySelector("#archiveList"),
   archiveCount: document.querySelector("#archiveCount"),
   exportJsonButton: document.querySelector("#exportJsonButton"),
+  importJsonInput: document.querySelector("#importJsonInput"),
   exportCsvButton: document.querySelector("#exportCsvButton"),
   achievementList: document.querySelector("#achievementList"),
   achievementCount: document.querySelector("#achievementCount"),
@@ -183,6 +184,7 @@ function init() {
   el.dietForm.addEventListener("submit", saveDiet);
   el.archiveList.addEventListener("click", handleArchiveClick);
   el.exportJsonButton.addEventListener("click", exportJsonBackup);
+  el.importJsonInput.addEventListener("change", importJsonBackup);
   el.exportCsvButton.addEventListener("click", exportCsvBackup);
   el.clearDataButton.addEventListener("click", clearData);
 
@@ -1236,6 +1238,50 @@ function exportCsvBackup() {
   ];
   const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
   downloadFile(`减脂记录表格-${getFileDate()}.csv`, `\uFEFF${csv}`, "text/csv;charset=utf-8");
+}
+
+function importJsonBackup(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "{}"));
+      const importedState = parsed.state || parsed;
+      const nextState = normalizeImportedState(importedState);
+      const confirmed = window.confirm("导入备份会覆盖当前设备上的记录，确定继续吗？");
+      if (!confirmed) return;
+
+      Object.assign(state, nextState);
+      persist();
+      syncTargetsToInputs();
+      loadWeightForDate(el.dateInput.value);
+      loadMeasurementsForDate(el.dateInput.value);
+      loadDietForDate(el.dateInput.value);
+      render();
+      window.alert("导入完成。");
+    } catch {
+      window.alert("导入失败：请选择由本网页导出的 JSON 备份文件。");
+    } finally {
+      event.target.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+function normalizeImportedState(importedState) {
+  const fallback = loadState();
+  return {
+    ...fallback,
+    ...importedState,
+    targets: { ...fallback.targets, ...(importedState.targets || {}) },
+    weights: Array.isArray(importedState.weights) ? importedState.weights : [],
+    measurements: Array.isArray(importedState.measurements) ? importedState.measurements : [],
+    diets: importedState.diets && typeof importedState.diets === "object" ? importedState.diets : {},
+    customFoods: Array.isArray(importedState.customFoods) ? importedState.customFoods : [],
+    onlineFoods: importedState.onlineFoods && typeof importedState.onlineFoods === "object" ? importedState.onlineFoods : {},
+  };
 }
 
 function downloadFile(filename, content, type) {
