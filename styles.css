@@ -239,6 +239,7 @@ h3 {
   grid-template-areas:
     "weight diet"
     "body body"
+    "export export"
     "achievements achievements";
   gap: 18px;
   align-items: start;
@@ -275,8 +276,20 @@ h3 {
   grid-area: achievements;
 }
 
-.achievements-panel {
+.export-panel {
+  grid-area: export;
+}
+
+.achievements-panel,
+.export-panel {
   grid-column: 1 / -1;
+}
+
+.export-actions {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .panel-head {
@@ -909,6 +922,7 @@ canvas {
       "weight"
       "diet"
       "body"
+      "export"
       "achievements";
   }
 

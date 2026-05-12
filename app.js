@@ -153,6 +153,8 @@ const el = {
   dietStatus: document.querySelector("#dietStatus"),
   archiveList: document.querySelector("#archiveList"),
   archiveCount: document.querySelector("#archiveCount"),
+  exportJsonButton: document.querySelector("#exportJsonButton"),
+  exportCsvButton: document.querySelector("#exportCsvButton"),
   achievementList: document.querySelector("#achievementList"),
   achievementCount: document.querySelector("#achievementCount"),
 };
@@ -180,6 +182,8 @@ function init() {
   el.targetForm.addEventListener("input", saveTargets);
   el.dietForm.addEventListener("submit", saveDiet);
   el.archiveList.addEventListener("click", handleArchiveClick);
+  el.exportJsonButton.addEventListener("click", exportJsonBackup);
+  el.exportCsvButton.addEventListener("click", exportCsvBackup);
   el.clearDataButton.addEventListener("click", clearData);
 
   render();
@@ -1191,6 +1195,69 @@ function getDietStreak(predicate) {
     else break;
   }
   return streak;
+}
+
+function exportJsonBackup() {
+  const payload = {
+    app: "fat-loss-tracker",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    state,
+  };
+  downloadFile(`减脂记录备份-${getFileDate()}.json`, JSON.stringify(payload, null, 2), "application/json");
+}
+
+function exportCsvBackup() {
+  const rows = [
+    ["type", "date", "metric", "value", "unit"],
+    ...state.weights.flatMap((item) => [
+      ["weight", item.date, "weight", item.weight, "kg"],
+      ["weight", item.date, "targetWeight", state.targetWeight, "kg"],
+    ]),
+    ...state.measurements.flatMap((item) => [
+      ["measurement", item.date, "chest", item.chest || "", "cm"],
+      ["measurement", item.date, "waist", item.waist || "", "cm"],
+      ["measurement", item.date, "hip", item.hip || "", "cm"],
+      ["measurement", item.date, "thigh", item.thigh || "", "cm"],
+      ["measurement", item.date, "calf", item.calf || "", "cm"],
+      ["measurement", item.date, "arm", item.arm || "", "cm"],
+    ]),
+    ...Object.keys(state.diets)
+      .sort()
+      .flatMap((date) => {
+        const total = state.diets[date].total || {};
+        return [
+          ["diet", date, "calories", total.calories || 0, "kcal"],
+          ["diet", date, "protein", total.protein || 0, "g"],
+          ["diet", date, "carbs", total.carbs || 0, "g"],
+          ["diet", date, "fat", total.fat || 0, "g"],
+        ];
+      }),
+  ];
+  const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+  downloadFile(`减脂记录表格-${getFileDate()}.csv`, `\uFEFF${csv}`, "text/csv;charset=utf-8");
+}
+
+function downloadFile(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsv(value) {
+  const text = String(value ?? "");
+  if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+function getFileDate() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function formatSigned(value, unit = "") {
